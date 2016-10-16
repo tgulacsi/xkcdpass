@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"sort"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
@@ -70,7 +69,6 @@ func init() {
 				Each(func(i int, s *goquery.Selection) {
 					words = append(words, s.Text())
 				})
-			sort.Sort(byLenR(words))
 			mu.Lock()
 			fmt.Fprintf(bw, "\twordsMap[%q] = []string{\n", k)
 			for _, w := range words {
@@ -89,11 +87,3 @@ func init() {
 	bw.WriteString("\n}\n")
 	return bw.Flush()
 }
-
-var _ = sort.Interface(byLenR(nil))
-
-type byLenR []string
-
-func (b byLenR) Len() int           { return len(b) }
-func (b byLenR) Less(i, j int) bool { return len(b[i]) > len(b[j]) }
-func (b byLenR) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
