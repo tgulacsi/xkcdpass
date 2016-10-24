@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate go get github.com/PuerkitoBio/goquery
 //go:generate go run dl.go
 
 var wordsMap = make(map[string][]string, 100)
