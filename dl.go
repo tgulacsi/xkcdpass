@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/PuerkitoBio/goquery"
@@ -35,7 +36,11 @@ func main() {
 
 const URL = "http://www.1000mostcommonwords.com/"
 
-var rURL = regexp.MustCompile(`href="(` + URL + `words/1000-most-common-([^-]+)-words)"`)
+var rURL = regexp.MustCompile(
+	`href="(` +
+		strings.Replace(URL, "://www.", "://(?:www[.])?", 1) +
+		`(?:words/)?1000-(?:most-)?common-([^-]+)-words)"`,
+)
 
 func Download(w io.Writer) error {
 	resp, err := http.Get(URL)
@@ -65,7 +70,11 @@ func init() {
 			if err := errors.Wrap(err, u); err != nil {
 				return err
 			}
-			doc.Find(".entry-content > table > tbody > tr > td:nth-child(2)").
+			nth := "2"
+			if strings.Contains(u, "-english-") {
+				nth = "3"
+			}
+			doc.Find(".entry-content > table > tbody > tr > td:nth-child(" + nth + ")").
 				Each(func(i int, s *goquery.Selection) {
 					words = append(words, s.Text())
 				})
