@@ -28,6 +28,9 @@ func main() {
 	if lng == "" {
 		lng = "en_US"
 	}
+	if i := strings.IndexByte(lng, '_'); i >= 0 {
+		lng = lng[:i]
+	}
 	flagLang := flag.String("lang", lng, "language")
 	flagFile := flag.String("file", "words.json.gz", "words file - will be created if not exist")
 	flag.Parse()
@@ -64,7 +67,10 @@ func Main(fn, lang string, n int) error {
 		}
 		if len(words) == 0 {
 			keys := make([]string, 0, len(wordsMap))
-			for k := range wordsMap {
+			for k, ws := range wordsMap {
+				if len(ws) == 0 {
+					continue
+				}
 				keys = append(keys, k)
 			}
 			sort.Strings(keys)
@@ -80,7 +86,7 @@ func Main(fn, lang string, n int) error {
 		}
 		chosen[i] = words[int(I.Int64())]
 	}
-	sort.Sort(byLenR(chosen))
+	//sort.Stable(byLenR(chosen))
 	io.WriteString(os.Stdout, strings.Join(chosen, " "))
 	_, err := os.Stdout.Write([]byte{'\n'})
 	return err

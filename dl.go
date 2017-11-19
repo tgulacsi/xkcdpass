@@ -78,6 +78,11 @@ func init() {
 				Each(func(i int, s *goquery.Selection) {
 					words = append(words, s.Text())
 				})
+			if len(words) <= 1 {
+				log.Printf("WARN: no words for %q in %q!", k, u)
+				return nil
+			}
+			words = words[1:]
 			mu.Lock()
 			fmt.Fprintf(bw, "\twordsMap[%q] = []string{\n", k)
 			for _, w := range words {
