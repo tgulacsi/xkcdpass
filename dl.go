@@ -66,8 +66,8 @@ func init() {
 		words := make([]string, 0, 1000)
 		grp.Go(func() error {
 			log.Println(u)
-			doc, err := goquery.NewDocument(u)
-			if err := errors.Wrap(err, u); err != nil {
+			doc, qErr := goquery.NewDocument(u)
+			if err := errors.Wrap(qErr, u); err != nil {
 				return err
 			}
 			nth := "2"
@@ -99,5 +99,8 @@ func init() {
 		err = wErr
 	}
 	bw.WriteString("\n}\n")
-	return bw.Flush()
+	if wErr := bw.Flush(); wErr != nil && err == nil {
+		err = wErr
+	}
+	return err
 }
