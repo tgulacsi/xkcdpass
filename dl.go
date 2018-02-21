@@ -65,10 +65,10 @@ func init() {
 		v = bytes.Replace(v, []byte("/www."), []byte("/"), 1)
 		v = bytes.Replace(v, []byte("/words/"), []byte("/"), 1)
 		u := string(v)
-		words := make([]string, 0, 1000)
 		grp.Go(func() error {
 			limit <- struct{}{}
 			defer func() { <-limit }()
+
 			log.Println(u)
 			doc, qErr := goquery.NewDocument(u)
 			if err := errors.Wrap(qErr, u); err != nil {
@@ -78,21 +78,26 @@ func init() {
 			if strings.Contains(u, "-english-") {
 				nth = "3"
 			}
+			var buf, lengths strings.Builder
 			doc.Find(".entry-content > table > tbody > tr > td:nth-child(" + nth + ")").
 				Each(func(i int, s *goquery.Selection) {
-					words = append(words, s.Text())
+					text := s.Text()
+					buf.WriteString(text)
+					if i == 0 {
+						return
+					}
+					if i != 1 {
+						lengths.WriteByte(',')
+					}
+					fmt.Fprintf(&lengths, "%d", len(text))
 				})
-			if len(words) <= 1 {
+			if buf.Len() <= 1 {
 				log.Printf("WARN: no words for %q in %q!", k, u)
 				return nil
 			}
-			words = words[1:]
 			mu.Lock()
-			fmt.Fprintf(bw, "\twordsMap[%q] = []string{\n", k)
-			for _, w := range words {
-				fmt.Fprintf(bw, "\t\t%q,\n", w)
-			}
-			fmt.Fprintf(bw, "\t}\n")
+			fmt.Fprintf(bw, "\twordsMap[%q] = stringWithLengths{\n\t\tWords: %q,\n\t\tLengths: []uint8{%s},\n\t}\n",
+				k, buf.String(), lengths.String())
 			mu.Unlock()
 			return nil
 		})

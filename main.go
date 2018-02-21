@@ -17,7 +17,7 @@ import (
 //go:generate go get github.com/PuerkitoBio/goquery
 //go:generate go run dl.go
 
-var wordsMap = make(map[string][]string, 100)
+var wordsMap = make(map[string]stringWithLengths, 100)
 var langNames = map[string]string{"hu": "hungarian", "en": "english"}
 
 func main() {
@@ -49,26 +49,26 @@ func main() {
 }
 
 func Main(fn, lang string, n int) error {
-	words := wordsMap[lang]
-	if len(words) == 0 {
+	sl := wordsMap[lang]
+	if sl.Len() == 0 {
 		s := lang
 		if i := strings.IndexByte(s, '_'); i > 0 {
 			s = s[:i]
 		}
 		if k := langNames[s]; k != "" {
-			words = wordsMap[k]
+			sl = wordsMap[k]
 		} else {
 			for k, v := range wordsMap {
 				if strings.HasPrefix(s, k) {
-					words = v
+					sl = v
 					break
 				}
 			}
 		}
-		if len(words) == 0 {
+		if sl.Len() == 0 {
 			keys := make([]string, 0, len(wordsMap))
-			for k, ws := range wordsMap {
-				if len(ws) == 0 {
+			for k := range wordsMap {
+				if sl.Len() == 0 {
 					continue
 				}
 				keys = append(keys, k)
@@ -77,20 +77,43 @@ func Main(fn, lang string, n int) error {
 			return errors.Errorf("No words for %q. Has %q.", lang, keys)
 		}
 	}
-	max := big.NewInt(int64(len(words)))
-	chosen := make([]string, n)
+	max := big.NewInt(int64(sl.Len()))
+	indices := make([]int, n)
 	for i := 0; i < n; i++ {
 		I, err := rand.Int(rand.Reader, max)
 		if err != nil {
 			return errors.Wrapf(err, "%d. rand", i)
 		}
-		chosen[i] = words[int(I.Int64())]
+		indices[i] = int(I.Int64())
 	}
+	sort.Ints(indices)
+	chosen := make([]string, n)
+	var i, s int
+	for j, length := range sl.Lengths {
+		if i >= n {
+			break
+		}
+		p := s
+		s += int(length)
+		if j < indices[i] {
+			continue
+		}
+		chosen[i] = sl.Words[p:s]
+		i++
+	}
+
 	//sort.Stable(byLenR(chosen))
 	io.WriteString(os.Stdout, strings.Join(chosen, " "))
 	_, err := os.Stdout.Write([]byte{'\n'})
 	return err
 }
+
+type stringWithLengths struct {
+	Words   string
+	Lengths []uint8
+}
+
+func (sL stringWithLengths) Len() int { return len(sL.Lengths) }
 
 var _ = sort.Interface(byLenR(nil))
 
