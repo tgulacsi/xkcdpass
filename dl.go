@@ -34,6 +34,7 @@ func main() {
 	}
 }
 
+const concurrency = 8
 const URL = "http://www.1000mostcommonwords.com/"
 
 var rURL = regexp.MustCompile(
@@ -56,6 +57,7 @@ package main
 
 func init() {
 `)
+	limit := make(chan struct{}, concurrency)
 	var mu sync.Mutex
 	var grp errgroup.Group
 	for _, loc := range rURL.FindAllSubmatchIndex(b, 100) {
@@ -65,6 +67,8 @@ func init() {
 		u := string(v)
 		words := make([]string, 0, 1000)
 		grp.Go(func() error {
+			limit <- struct{}{}
+			defer func() { <-limit }()
 			log.Println(u)
 			doc, qErr := goquery.NewDocument(u)
 			if err := errors.Wrap(qErr, u); err != nil {
