@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/rand"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"math/big"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,7 +19,7 @@ import (
 //go:generate go get github.com/PuerkitoBio/goquery
 //go:generate go run dl.go
 
-var wordsMap = make(map[string]stringWithLengths, 100)
+var wordsMap map[string]stringWithLengths
 var langNames = map[string]string{"hu": "hungarian", "en": "english"}
 
 func main() {
@@ -49,6 +51,18 @@ func main() {
 }
 
 func Main(fn, lang string, n int) error {
+	if len(wordsMap) == 0 {
+		fmt.Println(`The words needs to be downloaded and compiled into xkcdpass.
+
+This will only work if you have a working Go compiler!`)
+		if err := dlAndCompile(); err != nil {
+			return err
+		}
+		cmd := exec.Command(os.Args[0], os.Args[1:]...)
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		return cmd.Run()
+	}
+
 	sl := wordsMap[lang]
 	if sl.Len() == 0 {
 		s := lang
@@ -114,6 +128,22 @@ type stringWithLengths struct {
 }
 
 func (sL stringWithLengths) Len() int { return len(sL.Lengths) }
+
+func dlAndCompile() error {
+	const this = "github.com/tgulacsi/xkcdpass"
+	for _, command := range [][]string{
+		{"go", "generate", this},
+		{"go", "install", this},
+	} {
+		cmd := exec.Command(command[0], command[1:]...)
+		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+		log.Println(cmd.Args)
+		if err := cmd.Run(); err != nil {
+			return errors.Wrap(err, strings.Join(cmd.Args, " "))
+		}
+	}
+	return nil
+}
 
 var _ = sort.Interface(byLenR(nil))
 

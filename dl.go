@@ -56,6 +56,10 @@ func Download(w io.Writer) error {
 package main
 
 func init() {
+	wordsMap = generatedWordsMap
+}
+
+var generatedWordsMap = map[string]stringWithLengths{
 `)
 	limit := make(chan struct{}, concurrency)
 	var mu sync.Mutex
@@ -81,11 +85,11 @@ func init() {
 			var buf, lengths strings.Builder
 			doc.Find(".entry-content > table > tbody > tr > td:nth-child(" + nth + ")").
 				Each(func(i int, s *goquery.Selection) {
-					text := s.Text()
-					buf.WriteString(text)
 					if i == 0 {
 						return
 					}
+					text := s.Text()
+					buf.WriteString(text)
 					if i != 1 {
 						lengths.WriteByte(',')
 					}
@@ -96,7 +100,7 @@ func init() {
 				return nil
 			}
 			mu.Lock()
-			fmt.Fprintf(bw, "\twordsMap[%q] = stringWithLengths{\n\t\tWords: %q,\n\t\tLengths: []uint8{%s},\n\t}\n",
+			fmt.Fprintf(bw, "\t%q: stringWithLengths{\n\t\tWords: %q,\n\t\tLengths: []uint8{%s},\n\t},\n",
 				k, buf.String(), lengths.String())
 			mu.Unlock()
 			return nil
