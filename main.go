@@ -12,8 +12,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 //go:generate go get github.com/PuerkitoBio/goquery
@@ -88,7 +86,7 @@ This will only work if you have a working Go compiler!`)
 				keys = append(keys, k)
 			}
 			sort.Strings(keys)
-			return errors.Errorf("No words for %q. Has %q.", lang, keys)
+			return fmt.Errorf("No words for %q. Has %q.", lang, keys)
 		}
 	}
 	max := big.NewInt(int64(sl.Len()))
@@ -96,7 +94,7 @@ This will only work if you have a working Go compiler!`)
 	for i := 0; i < n; i++ {
 		I, err := rand.Int(rand.Reader, max)
 		if err != nil {
-			return errors.Wrapf(err, "%d. rand", i)
+			return fmt.Errorf("%d. rand: %w", i, err)
 		}
 		indices[i] = int(I.Int64())
 	}
@@ -139,7 +137,7 @@ func dlAndCompile() error {
 		cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 		log.Println(cmd.Args)
 		if err := cmd.Run(); err != nil {
-			return errors.Wrap(err, strings.Join(cmd.Args, " "))
+			return fmt.Errorf("%v: %w", cmd.Args, err)
 		}
 	}
 	return nil
