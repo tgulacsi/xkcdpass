@@ -115,7 +115,7 @@ This will only work if you have a working Go compiler!`)
 	}
 
 	//sort.Stable(byLenR(chosen))
-	io.WriteString(os.Stdout, strings.Join(chosen, " "))
+	_, _ = io.WriteString(os.Stdout, strings.Join(chosen, " "))
 	_, err := os.Stdout.Write([]byte{'\n'})
 	return err
 }
