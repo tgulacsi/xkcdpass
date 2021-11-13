@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-//go:generate go get github.com/PuerkitoBio/goquery
+//go:generate go get github.com/PuerkitoBio/goquery@latest
 //go:generate go run dl.go
 
 var wordsMap map[string]stringWithLengths
@@ -121,8 +121,8 @@ This will only work if you have a working Go compiler!`)
 }
 
 type stringWithLengths struct {
-	Words   string
-	Lengths []uint8
+	Source, Words string
+	Lengths       []uint8
 }
 
 func (sL stringWithLengths) Len() int { return len(sL.Lengths) }

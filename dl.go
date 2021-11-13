@@ -46,8 +46,11 @@ type urlSel struct {
 	Selector string
 }
 
-var URL = urlSel{URL: "http://www.1000mostcommonwords.com/", Selector: ".entry-content > table > tbody > tr > td:nth-child(2)"}
-var enURL = urlSel{Lang: "english", URL: "https://www.ef.com/wwen/english-resources/english-vocabulary/top-3000-words/", Selector: ".col-md-12 > div:nth-child(2) > p:nth-child(2)"}
+var (
+	URL   = urlSel{URL: "http://www.1000mostcommonwords.com/", Selector: ".entry-content > table > tbody > tr > td:nth-child(2)"}
+	enURL = urlSel{Lang: "english", URL: "https://www.ef.com/wwen/english-resources/english-vocabulary/top-3000-words/", Selector: ".col-md-12 > div:nth-child(2) > p:nth-child(2)"}
+	huURL = urlSel{Lang: "hungarian", URL: "https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists/Hungarian_frequency_list_1-10000", Selector: ".mw-parser-output > ol:nth-child(1) > li > a:nth-child(1)"}
+)
 
 var httpClient = http.DefaultClient
 
@@ -61,8 +64,9 @@ func Download(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	urls := make([]urlSel, 1, 256)
+	urls := make([]urlSel, 2, 128)
 	urls[0] = enURL
+	urls[1] = huURL
 	var rURL = regexp.MustCompile(
 		`href="(` +
 			strings.Replace(URL.URL, "://www.", "://(?:www[.])?", 1) +
@@ -73,7 +77,7 @@ func Download(w io.Writer) error {
 		k, v := string(b[loc[2*2]:loc[2*2+1]]), b[loc[2*1]:loc[2*1+1]]
 		v = bytes.Replace(v, []byte("/www."), []byte("/"), 1)
 		v = bytes.Replace(v, []byte("/words/"), []byte("/"), 1)
-		if bytes.Contains(v, []byte("-english-")) {
+		if bytes.Contains(v, []byte("-english-")) || bytes.Contains(v, []byte("-hungarian-")) {
 			continue
 		}
 		urls = append(urls, urlSel{Lang: string(k), URL: string(v), Selector: URL.Selector})
@@ -114,7 +118,7 @@ var generatedWordsMap = map[string]stringWithLengths{
 			var nth int
 			Add := func(text string) {
 				text = strings.TrimSpace(text)
-				if text == "" {
+				if text == "" || strings.EqualFold(text, u.Lang) {
 					return
 				}
 				buf.WriteString(text)
@@ -158,8 +162,8 @@ var generatedWordsMap = map[string]stringWithLengths{
 				return nil
 			}
 			mu.Lock()
-			fmt.Fprintf(bw, "\t%q: stringWithLengths{\n\t\tWords: %q,\n\t\tLengths: []uint8{%s},\n\t},\n",
-				u.Lang, buf.String(), lengths.String())
+			fmt.Fprintf(bw, "\t%q: stringWithLengths{\n\t\tSource: %q,\n\t\tWords: %q,\n\t\tLengths: []uint8{%s},\n\t},\n",
+				u.Lang, u.URL, buf.String(), lengths.String())
 			mu.Unlock()
 			return nil
 		})
