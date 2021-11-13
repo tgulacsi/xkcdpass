@@ -6,11 +6,15 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -27,18 +31,18 @@ func main() {
 }
 
 func Main() error {
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
 	fh, err := renameio.TempFile("", "generated.go")
 	if err != nil {
 		return err
 	}
 	defer fh.Cleanup()
-	if err = Download(fh); err != nil {
+	if err = Download(ctx, fh); err != nil {
 		return err
 	}
 	return fh.CloseAtomicallyReplace()
 }
-
-const concurrency = 8
 
 type urlSel struct {
 	Lang     string
@@ -54,8 +58,12 @@ var (
 
 var httpClient = http.DefaultClient
 
-func Download(w io.Writer) error {
-	resp, err := httpClient.Get(URL.URL)
+func Download(ctx context.Context, w io.Writer) error {
+	req, err := http.NewRequestWithContext(ctx, "GET", URL.URL, nil)
+	if err != nil {
+		return fmt.Errorf("%s: %w", URL, err)
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("%s: %w", URL, err)
 	}
@@ -94,7 +102,7 @@ func init() {
 
 var generatedWordsMap = map[string]stringWithLengths{
 `)
-	limit := make(chan struct{}, concurrency)
+	limit := make(chan struct{}, runtime.GOMAXPROCS(-1))
 	var mu sync.Mutex
 	var grp errgroup.Group
 	var token struct{}
@@ -105,7 +113,11 @@ var generatedWordsMap = map[string]stringWithLengths{
 			defer func() { <-limit }()
 
 			log.Println(u)
-			resp, err := httpClient.Get(u.URL)
+			req, err := http.NewRequestWithContext(ctx, "GET", u.URL, nil)
+			if err != nil {
+				return fmt.Errorf("%s: %w", u, err)
+			}
+			resp, err := httpClient.Do(req)
 			if err != nil {
 				return fmt.Errorf("%s: %w", u, err)
 			}
