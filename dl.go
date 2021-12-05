@@ -1,6 +1,10 @@
 //go:build nobuild
 // +build nobuild
 
+// Copyright 2016, 2021 Tamás Gulácsi. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (

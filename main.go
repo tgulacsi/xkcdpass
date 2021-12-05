@@ -1,3 +1,7 @@
+// Copyright 2016, 2021 Tamás Gulácsi. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
@@ -50,9 +54,11 @@ func main() {
 
 func Main(fn, lang string, n int) error {
 	if len(wordsMap) == 0 {
-		fmt.Println(`The words needs to be downloaded and compiled into xkcdpass.
+		fmt.Print(`The words needs to be downloaded and compiled into xkcdpass.
 
-This will only work if you have a working Go compiler!`)
+This will only work if you have a working Go compiler!
+
+`)
 		if err := dlAndCompile(); err != nil {
 			return err
 		}
