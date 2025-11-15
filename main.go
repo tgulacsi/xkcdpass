@@ -97,7 +97,7 @@ This will only work if you have a working Go compiler!
 	}
 	max := big.NewInt(int64(sl.Len()))
 	indices := make([]int, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		I, err := rand.Int(rand.Reader, max)
 		if err != nil {
 			return fmt.Errorf("%d. rand: %w", i, err)
